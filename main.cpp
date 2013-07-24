@@ -1,14 +1,13 @@
+#include <url_scanner.hpp>
+#include <service.hpp>
+#include <basic_server.hpp>
+
 #include <string>
 #include <iostream>
 #include <functional>
 #include <vector>
 #include <memory>
 #include <sstream>
-#include <url_scanner.hpp>
-#include <service.hpp>
-#include <basic_server.hpp>
-
-
 
 int main() {
     service_t s;
@@ -19,6 +18,10 @@ int main() {
 
     s.map<int,int>("/page/%/%") = [](request_t& req, int x, int y) {
         req.response() << x << " " << y;
+    };
+
+    s.map<std::string>("/title/%") = [](request_t& req, std::string s) {
+        req.response() << s;
     };
 
     basic_server_t bs;

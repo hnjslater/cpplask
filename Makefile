@@ -5,8 +5,7 @@ all:    main
 main: main.o
 	${CXX} $^ -o $@
 
-
-main.o:
+main.o: main.cpp
 	${CXX} ${CPPFLAGS} -c main.cpp -o main.o
 
 tests: url_scanner_test.cpp url_scanner.hpp
@@ -40,27 +39,29 @@ main.o: /usr/include/sys/_select.h /usr/include/sys/types.h
 main.o: /usr/include/sys/socket.h /usr/include/machine/_param.h
 main.o: /usr/include/i386/_param.h /usr/include/netinet/in.h
 main.o: /usr/include/stdint.h /usr/include/netinet6/in6.h
-server.o: /usr/include/stdio.h /usr/include/sys/cdefs.h
-server.o: /usr/include/sys/_symbol_aliasing.h
-server.o: /usr/include/sys/_posix_availability.h /usr/include/Availability.h
-server.o: /usr/include/AvailabilityInternal.h /usr/include/_types.h
-server.o: /usr/include/sys/_types.h /usr/include/machine/_types.h
-server.o: /usr/include/i386/_types.h /usr/include/secure/_stdio.h
-server.o: /usr/include/secure/_common.h /usr/include/stdlib.h
-server.o: /usr/include/sys/wait.h /usr/include/sys/signal.h
-server.o: /usr/include/sys/appleapiopts.h /usr/include/machine/signal.h
-server.o: /usr/include/i386/signal.h /usr/include/i386/_structs.h
-server.o: /usr/include/sys/_structs.h /usr/include/machine/_structs.h
-server.o: /usr/include/sys/resource.h /usr/include/machine/endian.h
-server.o: /usr/include/i386/endian.h /usr/include/sys/_endian.h
-server.o: /usr/include/libkern/_OSByteOrder.h
-server.o: /usr/include/libkern/i386/_OSByteOrder.h /usr/include/alloca.h
-server.o: /usr/include/machine/types.h /usr/include/i386/types.h
-server.o: /usr/include/string.h /usr/include/strings.h
-server.o: /usr/include/secure/_string.h /usr/include/unistd.h
-server.o: /usr/include/sys/unistd.h /usr/include/sys/select.h
-server.o: /usr/include/sys/_select.h /usr/include/sys/types.h
-server.o: /usr/include/sys/socket.h /usr/include/machine/_param.h
-server.o: /usr/include/i386/_param.h /usr/include/netinet/in.h
-server.o: /usr/include/stdint.h /usr/include/netinet6/in6.h
 url_scanner_test.o: ./url_scanner.hpp
+basic_server.o: /usr/include/stdio.h /usr/include/sys/cdefs.h
+basic_server.o: /usr/include/sys/_symbol_aliasing.h
+basic_server.o: /usr/include/sys/_posix_availability.h
+basic_server.o: /usr/include/Availability.h
+basic_server.o: /usr/include/AvailabilityInternal.h /usr/include/_types.h
+basic_server.o: /usr/include/sys/_types.h /usr/include/machine/_types.h
+basic_server.o: /usr/include/i386/_types.h /usr/include/secure/_stdio.h
+basic_server.o: /usr/include/secure/_common.h /usr/include/stdlib.h
+basic_server.o: /usr/include/sys/wait.h /usr/include/sys/signal.h
+basic_server.o: /usr/include/sys/appleapiopts.h /usr/include/machine/signal.h
+basic_server.o: /usr/include/i386/signal.h /usr/include/i386/_structs.h
+basic_server.o: /usr/include/sys/_structs.h /usr/include/machine/_structs.h
+basic_server.o: /usr/include/sys/resource.h /usr/include/machine/endian.h
+basic_server.o: /usr/include/i386/endian.h /usr/include/sys/_endian.h
+basic_server.o: /usr/include/libkern/_OSByteOrder.h
+basic_server.o: /usr/include/libkern/i386/_OSByteOrder.h
+basic_server.o: /usr/include/alloca.h /usr/include/machine/types.h
+basic_server.o: /usr/include/i386/types.h /usr/include/string.h
+basic_server.o: /usr/include/strings.h /usr/include/secure/_string.h
+basic_server.o: /usr/include/unistd.h /usr/include/sys/unistd.h
+basic_server.o: /usr/include/sys/select.h /usr/include/sys/_select.h
+basic_server.o: /usr/include/sys/types.h /usr/include/sys/socket.h
+basic_server.o: /usr/include/machine/_param.h /usr/include/i386/_param.h
+basic_server.o: /usr/include/netinet/in.h /usr/include/stdint.h
+basic_server.o: /usr/include/netinet6/in6.h

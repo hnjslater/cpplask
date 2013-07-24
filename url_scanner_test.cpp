@@ -62,3 +62,31 @@ TEST(UrlScanner, NoMatchAfterLastPercentSymbol) {
     EXPECT_EQ(va, -1);
     EXPECT_EQ(vb, -1);
 }
+
+
+TEST(UrlScanner, OneString) {
+    std::string value;
+    std::function<void(std::string)> func = [&](std::string a) { value = a; };
+    bool result = url_scan<std::string>("%", "astring", func);
+    EXPECT_EQ(result, true);
+    EXPECT_EQ(value, "astring");
+}
+
+TEST(UrlScanner, OneStringPath) {
+    std::string value;
+    std::function<void(std::string)> func = [&](std::string a) { value = a; };
+    bool result = url_scan<std::string>("/hops/%/yeast", "/hops/barley/yeast", func);
+    EXPECT_EQ(result, true);
+    EXPECT_EQ(value, "barley");
+}
+
+
+TEST(UrlScanner, StringIntPath) {
+    std::string va;
+    int vb;
+    std::function<void(std::string, int)> func = [&](std::string a, int b) { va = a; vb = b; };
+    bool result = url_scan<std::string>("/%/%/", "/abv/5/", func);
+    EXPECT_EQ(result, true);
+    EXPECT_EQ(va, "abv");
+    EXPECT_EQ(vb, 5);
+}

@@ -21,8 +21,43 @@ bool url_scan2(std::tuple<>, ITERATOR pattern,ITERATOR path,ITERATOR pattern_end
     return true;
 }
 
-template<typename... PARAMS, typename... PARAMS_IN, typename... PARAMS_OUT, typename ITERATOR>
-bool url_scan2(std::tuple<int,PARAMS_IN...>, ITERATOR pattern, ITERATOR path, ITERATOR pattern_end, ITERATOR path_end, std::function<void(PARAMS...)>& f, PARAMS_OUT... params) {
+template <typename VALUE_TYPE>
+class field_handler;
+
+template <>
+class field_handler<int> {
+    std::string field;
+public:
+    field_handler() : field() { }
+    bool try_append(char c) {
+        if (!std::isdigit(c))
+            return false;
+        field += c;
+        return true;
+    }
+    int get_value() {
+        return std::stoi(field.c_str());
+    }
+};
+
+template <>
+class field_handler<std::string> {
+    std::string field;
+public:
+    field_handler() : field() { }
+    bool try_append(char c) {
+        if (c == '/')
+            return false;
+        field += c;
+        return true;
+    }
+    std::string get_value() {
+        return field.c_str();
+    }
+};
+
+template<typename... PARAMS, typename... PARAMS_IN, typename... PARAMS_OUT, typename ITERATOR, typename VALUE>
+bool url_scan2(std::tuple<VALUE,PARAMS_IN...>, ITERATOR pattern, ITERATOR path, ITERATOR pattern_end, ITERATOR path_end, std::function<void(PARAMS...)>& f, PARAMS_OUT... params) {
 
     // At this point we know there's at least one more % to find as the std::tuple has at least one type in it (PARAMS_IN... could be empty).
     // effectively each recursion takes the head of the tuple's types and moves it to the back of the arguments list (PARAMS_OUT).
@@ -53,21 +88,18 @@ bool url_scan2(std::tuple<int,PARAMS_IN...>, ITERATOR pattern, ITERATOR path, IT
     }
     std::string raw_value(1,current_path);
 
-
-    // this is the only bit that's specifically about ints, needs to be refactored out.
-    if (!std::isdigit(current_path))
+    field_handler<VALUE> int_f;
+    if (!int_f.try_append(current_path))
         return false;
 
-    while (std::isdigit(*path) && path != path_end) {
-        raw_value += *path;
+
+    while (int_f.try_append(*path) && path != path_end) {
         path++;
     };
-    int value = std::stoi(raw_value);
 
-    return url_scan2(std::tuple<PARAMS_IN...>(), pattern, path, pattern_end, path_end, f, params..., value);
+
+    return url_scan2(std::tuple<PARAMS_IN...>(), pattern, path, pattern_end, path_end, f, params..., int_f.get_value());
 }
-
-
 
 template<typename... PARAMS>
 bool url_scan(std::string pattern, std::string path, std::function<void(PARAMS...)>& f) {
