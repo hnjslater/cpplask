@@ -1,4 +1,3 @@
-#include <url_scanner.hpp>
 #include <service.hpp>
 #include <basic_server.hpp>
 
@@ -8,6 +7,8 @@
 #include <vector>
 #include <memory>
 #include <sstream>
+
+using namespace cpplask;
 
 int main() {
     service_t s;
@@ -20,8 +21,12 @@ int main() {
         req.response() << x << " " << y;
     };
 
-    s.map<std::string>("/title/%") = [](request_t& req, std::string s) {
-        req.response() << s;
+    s.map<std::string>("/title/%") = [](request_t& req, std::string) {
+        req.response() << req.headers("User-Agent");
+    };
+
+    s.map<path_t>("/file/%") = [](request_t& req, path_t path) {
+        serve_static_file(req, path);
     };
 
     basic_server_t bs;

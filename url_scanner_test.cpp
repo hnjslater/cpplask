@@ -2,6 +2,7 @@
 #include <url_scanner.hpp>
 #include <functional>
 
+using namespace cpplask;
 
 TEST(UrlScanner, StaticMatch) {
     std::function<void()> func = []() {  };

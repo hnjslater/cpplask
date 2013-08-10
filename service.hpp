@@ -1,49 +1,41 @@
 #pragma once
+#include <url_scanner.hpp>
+#include <response.hpp>
+#include <request.hpp>
+
 #include <string>
 #include <iostream>
 #include <functional>
 #include <vector>
 #include <memory>
 #include <sstream>
+#include <fstream>
+#include <map>
 
-class response_t {
-    unsigned int m_code;
-    std::string m_status;
-    std::string m_mime_type;
+namespace cpplask {
 
-    std::stringstream m_buffer;
-public:
-    response_t() : m_code(200), m_status("OK"), m_mime_type("text/html"), m_buffer() { }
-    unsigned int& code() { return m_code; }
-    template<typename T>
-    std::stringstream& operator<<(T value) {
-        m_buffer << value;
-        return m_buffer;
+bool serve_static_file(request_t& req, path_t path) {
+
+    // This feels like it could be safer...
+    if (path.str.find("..") != std::string::npos) {
+        req.response().code() = 403;
+        req.response().status() = "Forbidden";
+    
     }
-    std::string str() {
-        return m_buffer.str();
-    }
-    std::string& status() {
-        return m_status;
-    }
+    std::fstream file(path.str, std::ios::in);
+
+    char buffer[1024];
+
+    do {
+        file.read(buffer, 1024);
+        req.response().write(buffer, file.gcount());
+
+    } while (!file.eof());
 
 
-
-};
-
-class request_t {
-    std::string m_path;
-    response_t m_response;
-
-public:
-    request_t(const std::string& path) : m_path(path), m_response() { }
-    const std::string& path() { return m_path; }
-    response_t& response() { return m_response; }
-
-    request_t(const request_t&) = delete;
-    request_t& operator=(const request_t&) = delete;
-
-};
+    file.close();
+    return true;
+}
 
 class route_t {
 protected:
@@ -119,3 +111,4 @@ public:
     }
 };
 
+}

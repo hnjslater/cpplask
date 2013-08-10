@@ -18,7 +18,7 @@
 
 class basic_server_t {
     public:
-    void serve(service_t& service, int port) {
+    void serve(cpplask::service_t& service, int port) {
         sockaddr_in server_address;
 
         int listen_socket_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -46,7 +46,6 @@ class basic_server_t {
                 throw std::runtime_error("Error during accept");
             }
             char buffer[2048] = {0};
-             
             int num_read = read(accept_socket_fd,buffer,2040);
             if (num_read < 0) {
                 throw std::runtime_error("ERROR reading from socket");
@@ -56,19 +55,24 @@ class basic_server_t {
 
             std::string verb = strtok_r(buffer, " ", &strtok_state);
             std::string path = strtok_r(NULL, " ", &strtok_state);
+            std::map<std::string, std::string> query_params;
+
+
             std::string version = strtok_r(NULL, "\n", &strtok_state);
+            std::map<std::string, std::string> headers;
             do {
                 current_line_buf = strtok_r(NULL, "\n", &strtok_state);
                 const std::string current_line(current_line_buf);
                 size_t index_of_colon = current_line.find(":"); 
                 if (index_of_colon != std::string::npos) {
                     const std::string name = current_line.substr(0, index_of_colon);
-                    const std::string value = current_line.substr(index_of_colon, current_line.length()-index_of_colon-1);
+                    const std::string value = current_line.substr(index_of_colon+2, current_line.length()-index_of_colon-3);
+                    headers[name] = value;
                 }
             } while (strlen(current_line_buf) > 1);
             std::cerr << verb << " " << path << "\n";
 
-            request_t req(path); 
+            cpplask::request_t req(path, std::move(headers)); 
             service.serve(req);
 
             std::string message = req.response().str();

@@ -4,6 +4,8 @@
 #include <stdexcept>
 #include <functional>
 
+namespace cpplask {
+
 template<typename...PARAMS, typename ITERATOR>
 bool url_scan2(std::tuple<>, ITERATOR pattern,ITERATOR path,ITERATOR pattern_end,ITERATOR path_end, std::function<void(PARAMS...)>& f, PARAMS... params) {
     while (path != path_end && pattern != pattern_end) {
@@ -22,7 +24,17 @@ bool url_scan2(std::tuple<>, ITERATOR pattern,ITERATOR path,ITERATOR pattern_end
 }
 
 template <typename VALUE_TYPE>
-class field_handler;
+class field_handler {
+    VALUE_TYPE value;
+public:
+    field_handler() : value() { }
+    bool try_append(char c) {
+        return value.try_append(c);
+    }
+    int get_value() {
+        return value.get_value();
+    }
+};
 
 template <>
 class field_handler<int> {
@@ -55,6 +67,27 @@ public:
         return field.c_str();
     }
 };
+
+struct path_t {
+    path_t() : str() { }
+    path_t(std::string str_in) : str(str_in) { }
+    std::string str;
+};
+
+template <>
+class field_handler<path_t> {
+    std::string field;
+public:
+    field_handler() : field() { }
+    bool try_append(char c) {
+        field += c;
+        return true;
+    }
+    path_t get_value() {
+        return path_t (field);
+    }
+};
+
 
 template<typename... PARAMS, typename... PARAMS_IN, typename... PARAMS_OUT, typename ITERATOR, typename VALUE>
 bool url_scan2(std::tuple<VALUE,PARAMS_IN...>, ITERATOR pattern, ITERATOR path, ITERATOR pattern_end, ITERATOR path_end, std::function<void(PARAMS...)>& f, PARAMS_OUT... params) {
@@ -108,4 +141,4 @@ bool url_scan(std::string pattern, std::string path, std::function<void(PARAMS..
     return url_scan2(std::tuple<PARAMS...>(), pattern.begin(), path.begin(), pattern.end(), path.end(), f);
 }
 
-
+}
