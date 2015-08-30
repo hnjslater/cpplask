@@ -8,8 +8,10 @@ main.o: main.cpp
 	${CXX} ${CPPFLAGS} -c main.cpp -o main.o
 
 tests: url_scanner_test.cpp url_scanner.hpp
-	${CXX} ${CPPFLAGS} -isystem ${GTEST_DIR}/include/ -L ${GTEST_DIR}  -lgtest  -lgtest_main -o $@ url_scanner_test.cpp
+	${CXX} ${CPPFLAGS} -o $@ url_scanner_test.cpp -pthread -lgtest -lgtest_main
 	./tests
+
 clean:
 	rm -f main tests main.o
+
 # DO NOT DELETE
