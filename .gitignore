@@ -12,5 +12,9 @@
 *.la
 *.a
 
+#temporary files
+*.swp
+Makefile.bak
+
 main
 tests

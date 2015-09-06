@@ -1,7 +1,7 @@
 cpplask
 =======
 
-Flask (Python Microframework) clone in c++11
+Flask (Python Microframework) clone in c++11.
 
 All code copyright Henry Slater unless otherwise stated.
 

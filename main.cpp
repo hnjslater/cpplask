@@ -7,6 +7,7 @@
 #include <vector>
 #include <memory>
 #include <sstream>
+#include <random>
 
 using namespace cpplask;
 
@@ -29,6 +30,5 @@ int main() {
         serve_static_file(req, path);
     };
 
-    basic_server_t bs;
-    bs.serve(s, 8000);
+    basic_serve(s, 5000);
 }

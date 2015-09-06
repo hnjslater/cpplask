@@ -1,11 +1,11 @@
 CPPFLAGS+=-std=c++11 -Wall -Werror -Wextra -pedantic -Weffc++ -I. -Wundef
 all:    main
 
-main: main.o
-	${CXX} $^ -o $@
+main: main.o basic_server.o service.o
+	${CXX} $^ -o $@ -pthread
 
-main.o: main.cpp
-	${CXX} ${CPPFLAGS} -c main.cpp -o main.o
+%.o: %.cpp
+	${CXX} -c ${CPPFLAGS} $< -o $@
 
 tests: url_scanner_test.cpp url_scanner.hpp
 	${CXX} ${CPPFLAGS} -o $@ url_scanner_test.cpp -pthread -lgtest -lgtest_main
@@ -14,4 +14,14 @@ tests: url_scanner_test.cpp url_scanner.hpp
 clean:
 	rm -f main tests main.o
 
+deps:
+	makedepend -Y. *.cpp
+
 # DO NOT DELETE
+
+basic_server.o: ./basic_server.hpp ./service.hpp ./url_scanner.hpp
+basic_server.o: ./response.hpp ./request.hpp
+main.o: ./service.hpp ./url_scanner.hpp ./response.hpp ./request.hpp
+main.o: ./basic_server.hpp
+service.o: ./url_scanner.hpp ./response.hpp ./request.hpp
+url_scanner_test.o: ./url_scanner.hpp
