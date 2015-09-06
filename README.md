@@ -1,7 +1,7 @@
 cpplask
 =======
 
-Flask (Python Microframework) clone in c++11.
+Flask (Python Microframework) clone in c++11. This is really just me playing, there's something very similar (and better) here: https://github.com/ipkn/crow
 
 All code copyright Henry Slater unless otherwise stated.
 
