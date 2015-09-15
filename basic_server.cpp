@@ -122,6 +122,7 @@ auto parse_request(std::string bufferstr) -> auto {
     return std::make_pair(path, headers); 
 }
 
+//FIXME function far too long, REFACTOR!
 void serve(cpplask::service_t& service, int listen_socket_fd) {
 
     struct sigaction new_action;
@@ -133,9 +134,13 @@ void serve(cpplask::service_t& service, int listen_socket_fd) {
     sigaction(SIGTERM, &new_action, NULL);
 
     std::vector<std::pair<int,std::string>> incoming_fds;
+    std::vector<std::pair<int,std::string>> outgoing_fds;
 
     while (g_keep_going) {
-        listen(listen_socket_fd,5);
+        listen(listen_socket_fd,50);
+
+        fd_set xfds;
+        FD_ZERO(&xfds);
 
         fd_set rfds;
         FD_ZERO(&rfds);
@@ -145,12 +150,23 @@ void serve(cpplask::service_t& service, int listen_socket_fd) {
             int fd = std::get<0>(fdpair);
             max_fd = std::max(max_fd, fd);
             FD_SET(fd, &rfds);
+            FD_SET(fd, &xfds);
+        }
+
+
+        fd_set wfds;
+        FD_ZERO(&wfds);
+        for (auto&& fdpair : outgoing_fds) {
+            int fd = std::get<0>(fdpair);
+            max_fd = std::max(max_fd, fd);
+            FD_SET(fd, &wfds);
+            FD_SET(fd, &xfds);
         }
 
         sigset_t mask;
         sigemptyset (&mask);
 
-        int pselect_rtn = pselect(max_fd+1, &rfds, NULL, NULL, NULL, &mask);
+        int pselect_rtn = pselect(max_fd+1, &rfds, &wfds, &xfds, NULL, &mask);
         if (pselect_rtn < 0) {
             perror("pselect");
         }
@@ -203,11 +219,74 @@ void serve(cpplask::service_t& service, int listen_socket_fd) {
                 ss << "Content-Type: text/plain\n";
                 ss << "Content-length: " << message.size() << "\n\n";
                 ss << message;
-                int num_written = write(accept_socket_fd,ss.str().c_str(),ss.str().size());
-                if (num_written < 0) {
-                    throw std::runtime_error("Error during writing to socket");
-                }
-                close(accept_socket_fd);
+                outgoing_fds.emplace_back(accept_socket_fd, ss.str());
+                return true;
+            }
+            else {
+                return false;
+            }
+        }), incoming_fds.end());
+
+        outgoing_fds.erase(std::remove_if(outgoing_fds.begin(), outgoing_fds.end(), [&](auto&& fdpair) {
+            int& write_socket_fd = std::get<0>(fdpair);
+            std::string& buffstr = std::get<1>(fdpair);
+            
+            if (FD_ISSET(write_socket_fd, &wfds)) {
+                int total_written = 0;
+                ssize_t num_written = 0;
+
+                do {
+                    //FIXME MSG_NOSIGNAL is a bit hacky
+                    //FIXME is writing 1200 at a time really a good idea?
+                    num_written = send(write_socket_fd,buffstr.c_str(),std::min(static_cast<size_t>(1200), buffstr.size()), MSG_DONTWAIT| MSG_NOSIGNAL);
+                    std::cerr << "Written " << num_written << " of " << buffstr.size() << std::endl;
+
+                    if (num_written < 0) {
+                        if (errno == EWOULDBLOCK || errno == EAGAIN) {
+                            total_written += num_written;
+                            buffstr = std::string(buffstr.begin() + num_written, buffstr.end());
+                            return false;
+                        }
+                        else {
+                            return true;
+                        }
+                    }
+                    else if (num_written == static_cast<ssize_t>(buffstr.size())) {
+                        return true;
+                    }
+                    else {
+                        total_written += num_written;
+                        buffstr = std::string(buffstr.begin() + num_written, buffstr.end());
+                    }
+                } while (num_written > 0);
+
+
+                return false;
+
+            }
+            else {
+                return false;
+            }
+        }), outgoing_fds.end());
+
+
+
+        outgoing_fds.erase(std::remove_if(outgoing_fds.begin(), outgoing_fds.end(), [&](auto&& fdpair) {
+            int& socket_fd = std::get<0>(fdpair);
+            
+            if (FD_ISSET(socket_fd, &xfds)) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }), outgoing_fds.end());
+
+
+        incoming_fds.erase(std::remove_if(incoming_fds.begin(), incoming_fds.end(), [&](auto&& fdpair) {
+            int& socket_fd = std::get<0>(fdpair);
+            
+            if (FD_ISSET(socket_fd, &xfds)) {
                 return true;
             }
             else {
