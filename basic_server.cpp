@@ -79,21 +79,54 @@ struct listen_socket {
             throw;
         }
     }
+    void serve(cpplask::service_t& service);
     ~listen_socket() {
         close(listen_socket_fd);
     }
 };
 
-void serve(cpplask::service_t& service, int listen_socket_fd);
-void basic_serve(cpplask::service_t& service, uint32_t port) {
-    g_keep_going=true;
-    listen_socket listen_socket(port);
-    std::cerr << "listening on port " << port << std::endl;
-    auto orig = stop_signals();
-    serve(service, listen_socket.listen_socket_fd);
-    restore_signals(orig);
-    std::cerr << "Exiting" << std::endl;
-}
+
+struct client_socket {
+    int socket_fd;
+    bool request_complete;
+    std::string buffer;
+    cpplask::service_t* service;
+    client_socket(int fd, cpplask::service_t& serv) : socket_fd(fd), request_complete(false), buffer(), service(&serv) {
+    }
+
+    client_socket(const client_socket&) = delete;
+    client_socket(client_socket&& c) : socket_fd(-1), request_complete(false), buffer(), service(nullptr) {
+        swap(c);
+    }
+    client_socket& operator=(const client_socket&) = delete;
+    client_socket& operator=(client_socket&& c) {
+        swap(c);
+        return *this;
+    }
+
+    void swap(client_socket& c) {
+        std::swap(socket_fd,c.socket_fd);
+        std::swap(request_complete, c.request_complete);
+        std::swap(buffer,c.buffer);
+        std::swap(service,c.service);
+    }
+
+    void add_fds(fd_set& rfds, fd_set& wfds, fd_set& xfds) {
+        if (request_complete) {
+            FD_SET(socket_fd, &wfds);
+        }
+        else {
+            FD_SET(socket_fd, &rfds);
+        }
+        FD_SET(socket_fd, &xfds);
+    }
+    void ingest(const std::string& data);
+    ~client_socket() {
+        if (socket_fd >= 0) {
+            close(socket_fd);
+        }
+    }
+};
 
 auto parse_request(std::string bufferstr) -> auto {
     char* buffer = const_cast<char*>(bufferstr.c_str());
@@ -122,8 +155,43 @@ auto parse_request(std::string bufferstr) -> auto {
     return std::make_pair(path, headers); 
 }
 
+void client_socket::ingest(const std::string& data) {
+    buffer += data;
+    std::string marker = "\r\n\r\n";
+
+    if (std::search(buffer.begin(), buffer.end(), marker.begin(), marker.end()) != buffer.end()) {
+
+        auto parameters = parse_request(buffer);
+        cpplask::request_t req(std::get<0>(parameters), std::get<1>(parameters));
+        service->serve(req);
+
+        std::string message = req.response().str();
+
+        std::stringstream ss;
+        ss << "HTTP/1.1 " << req.response().code() << " " << req.response().status() << "\n";
+        ss << "Content-Type: text/plain\n";
+        ss << "Content-length: " << message.size() << "\n\n";
+        ss << message;
+
+        buffer = ss.str();
+        request_complete = true;
+    }
+}
+
+void basic_serve(cpplask::service_t& service, uint32_t port) {
+    g_keep_going=true;
+    listen_socket listen_socket(port);
+    std::cerr << "listening on port " << port << std::endl;
+    auto orig = stop_signals();
+    listen_socket.serve(service);
+    restore_signals(orig);
+    std::cerr << "Exiting" << std::endl;
+}
+
+
+
 //FIXME function far too long, REFACTOR!
-void serve(cpplask::service_t& service, int listen_socket_fd) {
+void listen_socket::serve(cpplask::service_t& service) {
 
     struct sigaction new_action;
     sigemptyset (&new_action.sa_mask);
@@ -133,34 +201,23 @@ void serve(cpplask::service_t& service, int listen_socket_fd) {
     sigaction(SIGQUIT, &new_action, NULL);
     sigaction(SIGTERM, &new_action, NULL);
 
-    std::vector<std::pair<int,std::string>> incoming_fds;
-    std::vector<std::pair<int,std::string>> outgoing_fds;
+    std::vector<client_socket> clients;
 
     while (g_keep_going) {
         listen(listen_socket_fd,50);
 
-        fd_set xfds;
+        fd_set rfds, wfds, xfds;
+
+        FD_ZERO(&rfds);
+        FD_ZERO(&wfds);
         FD_ZERO(&xfds);
 
-        fd_set rfds;
-        FD_ZERO(&rfds);
         FD_SET(listen_socket_fd, &rfds);
         int max_fd = listen_socket_fd;
-        for (auto&& fdpair : incoming_fds) {
-            int fd = std::get<0>(fdpair);
-            max_fd = std::max(max_fd, fd);
-            FD_SET(fd, &rfds);
-            FD_SET(fd, &xfds);
-        }
 
-
-        fd_set wfds;
-        FD_ZERO(&wfds);
-        for (auto&& fdpair : outgoing_fds) {
-            int fd = std::get<0>(fdpair);
-            max_fd = std::max(max_fd, fd);
-            FD_SET(fd, &wfds);
-            FD_SET(fd, &xfds);
+        for (auto&& client : clients) {
+            client.add_fds(rfds, wfds, xfds);
+            max_fd = std::max(max_fd, client.socket_fd);
         }
 
         sigset_t mask;
@@ -185,51 +242,28 @@ void serve(cpplask::service_t& service, int listen_socket_fd) {
             if (accept_socket_fd < 0) {
                 throw std::runtime_error("Error during accept");
             }
-            incoming_fds.emplace_back(accept_socket_fd, std::string());
+            clients.emplace_back(accept_socket_fd, service);
         }
 
 
-        incoming_fds.erase(std::remove_if(incoming_fds.begin(), incoming_fds.end(), [&](auto&& fdpair) {
-            int& accept_socket_fd = std::get<0>(fdpair);
-            std::string& buffstr = std::get<1>(fdpair);
+        for (auto& client : clients) {
+            int& accept_socket_fd = client.socket_fd;
             
             if (FD_ISSET(accept_socket_fd, &rfds)) {
 
                 char buffer[2048] = {0};
                 int num_read = read(accept_socket_fd,buffer,2040);
-                if (num_read <= 0) {
-                    throw std::runtime_error("ERROR reading from socket");
+                if (num_read < 0) {
+                    throw std::runtime_error(std::string("ERROR reading from socket:") + std::to_string(accept_socket_fd) + strerror(errno));
                 }
 
-                buffstr += std::string(buffer, num_read);
-                std::string marker = "\r\n\r\n";
-
-                if (std::search(buffstr.begin(), buffstr.end(), marker.begin(), marker.end()) == buffstr.end()) {
-                    return false;
-                }
-
-                auto parameters = parse_request(buffstr);
-                cpplask::request_t req(std::get<0>(parameters), std::get<1>(parameters));
-                service.serve(req);
-
-                std::string message = req.response().str();
-
-                std::stringstream ss;
-                ss << "HTTP/1.1 " << req.response().code() << " " << req.response().status() << "\n";
-                ss << "Content-Type: text/plain\n";
-                ss << "Content-length: " << message.size() << "\n\n";
-                ss << message;
-                outgoing_fds.emplace_back(accept_socket_fd, ss.str());
-                return true;
+                client.ingest(std::string(buffer, num_read));
             }
-            else {
-                return false;
-            }
-        }), incoming_fds.end());
+        }
 
-        outgoing_fds.erase(std::remove_if(outgoing_fds.begin(), outgoing_fds.end(), [&](auto&& fdpair) {
-            int& write_socket_fd = std::get<0>(fdpair);
-            std::string& buffstr = std::get<1>(fdpair);
+        clients.erase(std::remove_if(clients.begin(), clients.end(), [&](auto&& client) {
+            int& write_socket_fd = client.socket_fd;
+            std::string& buffstr = client.buffer;
             
             if (FD_ISSET(write_socket_fd, &wfds)) {
                 int total_written = 0;
@@ -267,32 +301,13 @@ void serve(cpplask::service_t& service, int listen_socket_fd) {
             else {
                 return false;
             }
-        }), outgoing_fds.end());
+        }), clients.end());
 
 
 
-        outgoing_fds.erase(std::remove_if(outgoing_fds.begin(), outgoing_fds.end(), [&](auto&& fdpair) {
-            int& socket_fd = std::get<0>(fdpair);
-            
-            if (FD_ISSET(socket_fd, &xfds)) {
-                return true;
-            }
-            else {
-                return false;
-            }
-        }), outgoing_fds.end());
-
-
-        incoming_fds.erase(std::remove_if(incoming_fds.begin(), incoming_fds.end(), [&](auto&& fdpair) {
-            int& socket_fd = std::get<0>(fdpair);
-            
-            if (FD_ISSET(socket_fd, &xfds)) {
-                return true;
-            }
-            else {
-                return false;
-            }
-        }), incoming_fds.end());
+        clients.erase(std::remove_if(clients.begin(), clients.end(), [&](auto&& client) {
+            return (FD_ISSET(client.socket_fd, &xfds));
+        }), clients.end());
     }
 } 
 
