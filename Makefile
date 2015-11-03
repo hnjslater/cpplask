@@ -1,4 +1,5 @@
-CPPFLAGS+=-std=c++14 -Wall -Werror -Wextra -pedantic -Weffc++ -I. -Wundef
+CPPFLAGS+=-std=c++14 -Wall -Werror -Wextra -pedantic -Weffc++ -I. -Wundef -Wold-style-cast
+
 all:    main
 
 main: main.o basic_server.o service.o

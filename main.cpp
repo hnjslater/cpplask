@@ -14,11 +14,11 @@ using namespace cpplask;
 int main() {
     service_t s;
 
-    s.map<int>("/page/%") = [](request_t& req, int x) {
+    s.map<int>("/page/%") = [](request_t& req, auto x) {
         req.response() << x;
     };
 
-    s.map<int,int>("/page/%/%") = [](request_t& req, int x, int y) {
+    s.map<int,int>("/page/%/%") = [](request_t& req, auto x, auto y) {
         req.response() << x << " " << y;
     };
 

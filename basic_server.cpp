@@ -62,13 +62,13 @@ struct listen_socket {
                 throw std::runtime_error("error during socket opening");
             }
 
-            bzero((char *) &server_address, sizeof(server_address));
+            bzero(reinterpret_cast<char*>(&server_address), sizeof(server_address));
 
             server_address.sin_family = AF_INET;
             server_address.sin_addr.s_addr = INADDR_ANY;
             server_address.sin_port = htons(port);
 
-            if (bind(listen_socket_fd, (struct sockaddr *) &server_address, sizeof(server_address)) < 0) {
+            if (bind(listen_socket_fd, reinterpret_cast<struct sockaddr*>(&server_address), sizeof(server_address)) < 0) {
                 throw std::runtime_error(std::string("Error during socket binding: ") + strerror(errno));
             }
         }
@@ -237,7 +237,7 @@ void listen_socket::serve(cpplask::service_t& service) {
             socklen_t client_address_len = sizeof(client_address);
 
             int accept_socket_fd = accept(listen_socket_fd, 
-                     (struct sockaddr *) &client_address, 
+                     reinterpret_cast<struct sockaddr*>(&client_address), 
                      &client_address_len);
             if (accept_socket_fd < 0) {
                 throw std::runtime_error("Error during accept");
