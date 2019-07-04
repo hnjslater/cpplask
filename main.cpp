@@ -14,6 +14,10 @@ using namespace cpplask;
 int main() {
     service_t s;
 
+    s.map<>("/") = [](request_t& req) {
+        req.response() << "<htm><body><h1>Hello World</h1></body></html>";
+    };
+
     s.map<int>("/page/%") = [](request_t& req, auto x) {
         req.response() << x;
     };
@@ -26,7 +30,7 @@ int main() {
         req.response() << req.headers("User-Agent");
     };
 
-    s.map<path_t>("/file/%") = [](request_t& req, path_t path) {
+    s.map<path_t>("/file/%") = [](request_t& req, auto path) {
         serve_static_file(req, path);
     };
 
