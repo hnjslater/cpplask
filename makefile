@@ -2,7 +2,7 @@ CPPFLAGS+=-std=c++14 -Wall -Werror -Wextra -pedantic -Weffc++ -I. -Wundef -Wold-
 
 all:    main
 
-main: main.o basic_server.o service.o
+main: main.o basic_server/basic_server.o service.o basic_server/client_socket.o basic_server/listen_socket.o
 	${CXX} $^ -o $@ -pthread
 
 %.o: %.cpp
@@ -20,9 +20,7 @@ deps:
 
 # DO NOT DELETE
 
-basic_server.o: ./basic_server.hpp ./service.hpp ./url_scanner.hpp
-basic_server.o: ./response.hpp ./request.hpp ./signal_stopper.hpp
 main.o: ./service.hpp ./url_scanner.hpp ./response.hpp ./request.hpp
-main.o: ./basic_server.hpp
+main.o: ./basic_server/basic_server.hpp
 service.o: ./url_scanner.hpp ./response.hpp ./request.hpp
 url_scanner_test.o: ./url_scanner.hpp

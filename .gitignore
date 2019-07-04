@@ -14,7 +14,7 @@
 
 #temporary files
 *.swp
-Makefile.bak
+makefile.bak
 
 main
 tests
