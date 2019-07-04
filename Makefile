@@ -21,7 +21,7 @@ deps:
 # DO NOT DELETE
 
 basic_server.o: ./basic_server.hpp ./service.hpp ./url_scanner.hpp
-basic_server.o: ./response.hpp ./request.hpp
+basic_server.o: ./response.hpp ./request.hpp ./signal_stopper.hpp
 main.o: ./service.hpp ./url_scanner.hpp ./response.hpp ./request.hpp
 main.o: ./basic_server.hpp
 service.o: ./url_scanner.hpp ./response.hpp ./request.hpp

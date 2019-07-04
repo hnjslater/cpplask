@@ -29,6 +29,9 @@ public:
     std::string& status() {
         return m_status;
     }
+    std::string& mime_type() {
+        return m_mime_type;
+    }
 };
 
 }

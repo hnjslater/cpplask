@@ -1,4 +1,5 @@
 #include <basic_server.hpp>
+#include <signal_stopper.hpp>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,8 +10,6 @@
 #include <netinet/in.h>
 
 #include <unistd.h>
-#include <sys/types.h> 
-#include <sys/socket.h>
 #include <netinet/in.h>
 #include <iostream>
 #include <csignal>
@@ -37,17 +36,6 @@ extern "C" {
     }
 }
 
-sigset_t stop_signals() {
-    sigset_t set;
-    sigset_t orig_set;
-    sigfillset(&set);
-    pthread_sigmask(SIG_SETMASK, &set, &orig_set);
-    return orig_set;
-}
-
-void restore_signals(sigset_t& signals) {
-    pthread_sigmask(SIG_SETMASK, &signals, NULL);
-}
 
 struct listen_socket {
     int listen_socket_fd;
@@ -169,7 +157,7 @@ void client_socket::ingest(const std::string& data) {
 
         std::stringstream ss;
         ss << "HTTP/1.1 " << req.response().code() << " " << req.response().status() << "\n";
-        ss << "Content-Type: text/plain\n";
+        ss << "Content-Type: " << req.response().mime_type() << "\n";
         ss << "Content-length: " << message.size() << "\n\n";
         ss << message;
 
@@ -182,9 +170,9 @@ void basic_serve(cpplask::service_t& service, uint32_t port) {
     g_keep_going=true;
     listen_socket listen_socket(port);
     std::cerr << "listening on port " << port << std::endl;
-    auto orig = stop_signals();
+    signal_stopper_t stopper;
     listen_socket.serve(service);
-    restore_signals(orig);
+    stopper.restore_signals();
     std::cerr << "Exiting" << std::endl;
 }
 
@@ -204,7 +192,7 @@ void listen_socket::serve(cpplask::service_t& service) {
     std::vector<client_socket> clients;
 
     while (g_keep_going) {
-        listen(listen_socket_fd,50);
+        listen(listen_socket_fd, 50);
 
         fd_set rfds, wfds, xfds;
 
