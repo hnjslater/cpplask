@@ -36,7 +36,6 @@ extern "C" {
     }
 }
 
-
 struct listen_socket {
     int listen_socket_fd;
     listen_socket(uint32_t port) : 
@@ -73,13 +72,22 @@ struct listen_socket {
     }
 };
 
-
 struct client_socket {
     int socket_fd;
     bool request_complete;
     std::string buffer;
     cpplask::service_t* service;
-    client_socket(int fd, cpplask::service_t& serv) : socket_fd(fd), request_complete(false), buffer(), service(&serv) {
+    client_socket(int listen_socket_fd, cpplask::service_t& serv) : socket_fd(0), request_complete(false), buffer(), service(&serv) {
+        std::cerr << "client connected" << std::endl;
+        sockaddr_in client_address;
+        socklen_t client_address_len = sizeof(client_address);
+
+        socket_fd = accept(listen_socket_fd, 
+                 reinterpret_cast<struct sockaddr*>(&client_address), 
+                 &client_address_len);
+        if (socket_fd < 0) {
+            throw std::runtime_error("Error during accept");
+        }
     }
 
     client_socket(const client_socket&) = delete;
@@ -108,7 +116,8 @@ struct client_socket {
         }
         FD_SET(socket_fd, &xfds);
     }
-    void ingest(const std::string& data);
+    void ingest();
+    bool send_data();
     ~client_socket() {
         if (socket_fd >= 0) {
             close(socket_fd);
@@ -143,8 +152,14 @@ auto parse_request(std::string bufferstr) -> auto {
     return std::make_pair(path, headers); 
 }
 
-void client_socket::ingest(const std::string& data) {
-    buffer += data;
+void client_socket::ingest() {
+    char cbuffer[2048] = {0};
+    int num_read = read(socket_fd,cbuffer,2040);
+    if (num_read < 0) {
+        throw std::runtime_error(std::string("ERROR reading from socket:") + std::to_string(socket_fd) + strerror(errno));
+    }
+
+    buffer += std::string(cbuffer, num_read);
     std::string marker = "\r\n\r\n";
 
     if (std::search(buffer.begin(), buffer.end(), marker.begin(), marker.end()) != buffer.end()) {
@@ -166,8 +181,44 @@ void client_socket::ingest(const std::string& data) {
     }
 }
 
+
+// returns true if there is no more data to send.
+bool client_socket::send_data() {
+    int& write_socket_fd = socket_fd;
+    std::string& buffstr = buffer;
+    int total_written = 0;
+    ssize_t num_written = 0;
+
+    do {
+        //FIXME MSG_NOSIGNAL is a bit hacky
+        //FIXME is writing 1200 at a time really a good idea?
+        num_written = send(write_socket_fd,buffstr.c_str(),std::min(static_cast<size_t>(1200), buffstr.size()), MSG_DONTWAIT| MSG_NOSIGNAL);
+        std::cerr << "Written " << num_written << " of " << buffstr.size() << std::endl;
+
+        if (num_written < 0) {
+            if (errno == EWOULDBLOCK || errno == EAGAIN) {
+                total_written += num_written;
+                buffstr = std::string(buffstr.begin() + num_written, buffstr.end());
+                return false;
+            }
+            else {
+                return true;
+            }
+        }
+        else if (num_written == static_cast<ssize_t>(buffstr.size())) {
+            return true;
+        }
+        else {
+            total_written += num_written;
+            buffstr = std::string(buffstr.begin() + num_written, buffstr.end());
+        }
+    } while (num_written > 0);
+
+    return false;
+}
+
 void basic_serve(cpplask::service_t& service, uint32_t port) {
-    g_keep_going=true;
+    g_keep_going = true;
     listen_socket listen_socket(port);
     std::cerr << "listening on port " << port << std::endl;
     signal_stopper_t stopper;
@@ -175,7 +226,6 @@ void basic_serve(cpplask::service_t& service, uint32_t port) {
     stopper.restore_signals();
     std::cerr << "Exiting" << std::endl;
 }
-
 
 
 //FIXME function far too long, REFACTOR!
@@ -191,9 +241,8 @@ void listen_socket::serve(cpplask::service_t& service) {
 
     std::vector<client_socket> clients;
 
+    listen(listen_socket_fd, 50);
     while (g_keep_going) {
-        listen(listen_socket_fd, 50);
-
         fd_set rfds, wfds, xfds;
 
         FD_ZERO(&rfds);
@@ -220,79 +269,27 @@ void listen_socket::serve(cpplask::service_t& service) {
         }
         if (pselect_rtn > 0 && FD_ISSET(listen_socket_fd, &rfds)) {
             // new client connecting    
-            std::cerr << "client connected" << std::endl;
-            sockaddr_in client_address;
-            socklen_t client_address_len = sizeof(client_address);
-
-            int accept_socket_fd = accept(listen_socket_fd, 
-                     reinterpret_cast<struct sockaddr*>(&client_address), 
-                     &client_address_len);
-            if (accept_socket_fd < 0) {
-                throw std::runtime_error("Error during accept");
-            }
-            clients.emplace_back(accept_socket_fd, service);
+            clients.emplace_back(listen_socket_fd, service);
         }
 
-
+        // incoming data
         for (auto& client : clients) {
-            int& accept_socket_fd = client.socket_fd;
-            
-            if (FD_ISSET(accept_socket_fd, &rfds)) {
-
-                char buffer[2048] = {0};
-                int num_read = read(accept_socket_fd,buffer,2040);
-                if (num_read < 0) {
-                    throw std::runtime_error(std::string("ERROR reading from socket:") + std::to_string(accept_socket_fd) + strerror(errno));
-                }
-
-                client.ingest(std::string(buffer, num_read));
+            if (FD_ISSET(client.socket_fd, &rfds)) {
+                client.ingest();
             }
         }
 
+        // outgoing data and delete them when we're done.
         clients.erase(std::remove_if(clients.begin(), clients.end(), [&](auto&& client) {
-            int& write_socket_fd = client.socket_fd;
-            std::string& buffstr = client.buffer;
-            
-            if (FD_ISSET(write_socket_fd, &wfds)) {
-                int total_written = 0;
-                ssize_t num_written = 0;
-
-                do {
-                    //FIXME MSG_NOSIGNAL is a bit hacky
-                    //FIXME is writing 1200 at a time really a good idea?
-                    num_written = send(write_socket_fd,buffstr.c_str(),std::min(static_cast<size_t>(1200), buffstr.size()), MSG_DONTWAIT| MSG_NOSIGNAL);
-                    std::cerr << "Written " << num_written << " of " << buffstr.size() << std::endl;
-
-                    if (num_written < 0) {
-                        if (errno == EWOULDBLOCK || errno == EAGAIN) {
-                            total_written += num_written;
-                            buffstr = std::string(buffstr.begin() + num_written, buffstr.end());
-                            return false;
-                        }
-                        else {
-                            return true;
-                        }
-                    }
-                    else if (num_written == static_cast<ssize_t>(buffstr.size())) {
-                        return true;
-                    }
-                    else {
-                        total_written += num_written;
-                        buffstr = std::string(buffstr.begin() + num_written, buffstr.end());
-                    }
-                } while (num_written > 0);
-
-
-                return false;
-
+            if (FD_ISSET(client.socket_fd, &wfds)) {
+                return client.send_data();
             }
             else {
                 return false;
             }
         }), clients.end());
 
-
-
+        // get rid of errored clients.
         clients.erase(std::remove_if(clients.begin(), clients.end(), [&](auto&& client) {
             return (FD_ISSET(client.socket_fd, &xfds));
         }), clients.end());
