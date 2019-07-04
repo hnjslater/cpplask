@@ -1,5 +1,6 @@
 CPPFLAGS+=-std=c++14 -Wall -Werror -Wextra -pedantic -Weffc++ -I. -Wundef -Wold-style-cast
-OBJS:=main.o service.o basic_server/basic_server.o basic_server/client_socket.o basic_server/listen_socket.o
+OBJS:=main.o service.o request.o response.o
+OBJS+=basic_server/basic_server.o basic_server/client_socket.o basic_server/listen_socket.o
 
 all:    main
 
@@ -23,6 +24,8 @@ deps:
 
 main.o: ./service.hpp ./url_scanner.hpp ./response.hpp ./request.hpp
 main.o: ./basic_server/basic_server.hpp
+request.o: ./request.hpp ./response.hpp
+response.o: ./response.hpp
 service.o: ./url_scanner.hpp ./response.hpp ./request.hpp
 url_scanner_test.o: ./url_scanner.hpp
 basic_server/basic_server.o: ./basic_server/basic_server.hpp ./service.hpp
