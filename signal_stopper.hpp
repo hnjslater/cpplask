@@ -1,5 +1,8 @@
 #pragma once
+
 #include <csignal>
+#include <stdexcept>
+
 struct signal_stopper_t {
     sigset_t m_orig_set;
     bool m_signals_masked;
