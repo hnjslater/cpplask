@@ -9,7 +9,7 @@ struct listen_socket {
     int listen_socket_fd;
     listen_socket(uint32_t port); 
 
-    void serve(cpplask::service_t& service);
+    void serve(cpplask::service& service);
     ~listen_socket();
 };
 

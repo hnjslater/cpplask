@@ -7,10 +7,10 @@
 
 namespace cpplask {
 
-void basic_serve(cpplask::service_t& service, uint32_t port) {
+void basic_serve(cpplask::service& service, uint32_t port) {
     listen_socket listen_socket(port);
     std::cerr << "listening on port " << port << std::endl;
-    signal_stopper_t stopper;
+    signal_stopper stopper;
     listen_socket.serve(service);
     stopper.restore_signals();
     std::cerr << "Exiting" << std::endl;

@@ -13,7 +13,7 @@
 
 namespace cpplask {
 
-bool serve_static_file(request_t& req, path_t path) {
+bool serve_static_file(request& req, path path) {
 
     // This feels like it could be safer...
     if (path.str.find("..") != std::string::npos) {

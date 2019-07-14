@@ -8,8 +8,8 @@ struct client_socket {
     int socket_fd;
     bool request_complete;
     std::string buffer;
-    cpplask::service_t* service;
-    client_socket(int listen_socket_fd, cpplask::service_t& serv);
+    cpplask::service* service;
+    client_socket(int listen_socket_fd, cpplask::service& serv);
 
     client_socket(const client_socket&) = delete;
     client_socket(client_socket&& c);

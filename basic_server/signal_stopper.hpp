@@ -3,10 +3,10 @@
 #include <csignal>
 #include <stdexcept>
 
-struct signal_stopper_t {
+struct signal_stopper {
     sigset_t m_orig_set;
     bool m_signals_masked;
-    signal_stopper_t() : m_orig_set(), m_signals_masked(true) {
+    signal_stopper() : m_orig_set(), m_signals_masked(true) {
         sigset_t set;
         sigfillset(&set);
         sigemptyset(&m_orig_set);
@@ -20,7 +20,7 @@ struct signal_stopper_t {
         }
         m_signals_masked = false;
     }
-    ~signal_stopper_t() {
+    ~signal_stopper() {
         if (m_signals_masked) {
             restore_signals();
         }

@@ -5,23 +5,23 @@
 
 #include <response.hpp>
 
-namespace cpplask {
+namespace cpplask::impl {
 
-response_t::response_t() : m_code(200), m_status("OK"), m_mime_type("text/html"), m_buffer() { }
+response::response() : m_code(200), m_status("OK"), m_mime_type("text/html"), m_buffer() { }
 
-unsigned int& response_t::code() {
+unsigned int& response::code() {
     return m_code;
 }
-void response_t::write(char* buffer, int count) {
+void response::write(char* buffer, int count) {
     m_buffer.write(buffer, count);
 }
-std::string response_t::str() {
+std::string response::str() {
     return m_buffer.str();
 }
-std::string& response_t::status() {
+std::string& response::status() {
     return m_status;
 }
-std::string& response_t::mime_type() {
+std::string& response::mime_type() {
     return m_mime_type;
 }
 

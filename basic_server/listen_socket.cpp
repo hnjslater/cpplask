@@ -67,7 +67,7 @@ cpplask::listen_socket::~listen_socket() {
     close(listen_socket_fd);
 }
 
-void cpplask::listen_socket::serve(cpplask::service_t& service) {
+void cpplask::listen_socket::serve(cpplask::service& service) {
 
     struct sigaction new_action;
     sigemptyset (&new_action.sa_mask);

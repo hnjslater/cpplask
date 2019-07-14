@@ -53,7 +53,7 @@ bool cpplask::client_socket::send_data() {
 }
 
 
-cpplask::client_socket::client_socket(int listen_socket_fd, cpplask::service_t& serv) : 
+cpplask::client_socket::client_socket(int listen_socket_fd, cpplask::service& serv) : 
     socket_fd(0), request_complete(false), buffer(), service(&serv) 
 {
     std::cerr << "client connected" << std::endl;
@@ -140,7 +140,7 @@ void cpplask::client_socket::ingest() {
     if (std::search(buffer.begin(), buffer.end(), marker.begin(), marker.end()) != buffer.end()) {
 
         auto parameters = parse_request(buffer);
-        cpplask::request_t req(std::get<0>(parameters), std::get<1>(parameters));
+        cpplask::request req(std::get<0>(parameters), std::get<1>(parameters));
         service->serve(req);
 
         std::string message = req.response().str();

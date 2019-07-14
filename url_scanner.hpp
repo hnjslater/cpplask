@@ -68,14 +68,14 @@ public:
     }
 };
 
-struct path_t {
-    path_t() : str() { }
-    path_t(std::string str_in) : str(str_in) { }
+struct path {
+    path() : str() { }
+    path(std::string str_in) : str(str_in) { }
     std::string str;
 };
 
 template <>
-class field_handler<path_t> {
+class field_handler<path> {
     std::string field;
 public:
     field_handler() : field() { }
@@ -83,8 +83,8 @@ public:
         field += c;
         return true;
     }
-    path_t get_value() {
-        return path_t (field);
+    path get_value() {
+        return path (field);
     }
 };
 

@@ -1,4 +1,4 @@
-CPPFLAGS+=-std=c++14 -Wall -Werror -Wextra -pedantic -Weffc++ -I. -Wundef -Wold-style-cast
+CPPFLAGS+=-std=c++17 -Wall -Werror -Wextra -pedantic -Weffc++ -I. -Wundef -Wold-style-cast
 OBJS:=main.o service.o request.o response.o
 OBJS+=basic_server/basic_server.o basic_server/client_socket.o basic_server/listen_socket.o
 

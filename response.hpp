@@ -6,16 +6,17 @@
 
 #include <response.hpp>
 
-namespace cpplask {
+// Namespace is so we can have a method called response in request. Not ideal.
+namespace cpplask::impl {
 
-class response_t {
+class response {
     unsigned int m_code;
     std::string m_status;
     std::string m_mime_type;
-
     std::stringstream m_buffer;
+
 public:
-    response_t();
+    response();
 
     template<typename T>
     std::stringstream& operator<<(T value);
@@ -28,10 +29,9 @@ public:
 };
 
 template<typename T>
-std::stringstream& response_t::operator<<(T value) {
+std::stringstream& response::operator<<(T value) {
     m_buffer << value;
     return m_buffer;
 }
-
 
 }
