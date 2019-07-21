@@ -147,8 +147,10 @@ void cpplask::client_socket::ingest() {
 
         std::stringstream ss;
         ss << "HTTP/1.1 " << req.response().code() << " " << req.response().status() << "\n";
-        ss << "Content-Type: " << req.response().mime_type() << "\n";
-        ss << "Content-length: " << message.size() << "\n\n";
+        req.response().add_header("Content-Type", req.response().mime_type()); 
+        req.response().add_header("Content-Length", std::to_string(message.size())); 
+        ss << req.response().headers_str();
+        ss << "\n";
         ss << message;
 
         buffer = ss.str();

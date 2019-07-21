@@ -34,5 +34,11 @@ int main() {
         serve_static_file(req, path);
     };
 
+    s.map<>("/info") = [](request& req) {
+        req.response().add_header("Server", "cpplask 0.1");
+        req.response() << "<htm><body><h1>Hello World</h1></body></html>";
+    };
+
+
     basic_serve(s, 5000);
 }

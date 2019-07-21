@@ -14,6 +14,7 @@ class response {
     std::string m_status;
     std::string m_mime_type;
     std::stringstream m_buffer;
+    std::stringstream m_header_buffer;
 
 public:
     response();
@@ -23,9 +24,12 @@ public:
 
     unsigned int& code();
     void write(char* buffer, int count);
+    void add_header(const std::string& name, const std::string& value);
+
+    std::string headers_str();
     std::string str();
     std::string& status();
-    std::string& mime_type(); 
+    std::string& mime_type();
 };
 
 template<typename T>
