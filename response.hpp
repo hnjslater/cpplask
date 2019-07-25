@@ -17,17 +17,23 @@ class response {
     std::stringstream m_header_buffer;
 
 public:
+// Constructors
     response();
 
+// Accessors
+    std::string headers_str();
+    std::string str();
+
+// Mutators
     template<typename T>
     std::stringstream& operator<<(T value);
 
-    unsigned int& code();
     void write(char* buffer, int count);
     void add_header(const std::string& name, const std::string& value);
+    void add_cookie(const std::string& name, const std::string& value);
 
-    std::string headers_str();
-    std::string str();
+// Fields
+    unsigned int& code();
     std::string& status();
     std::string& mime_type();
 };

@@ -27,7 +27,7 @@ int main() {
     };
 
     s.map<std::string>("/title/%") = [](request& req, std::string) {
-        req.response() << req.headers("User-Agent");
+        req.response() << req.headers("User-Agent")[0];
     };
 
     s.map<path>("/file/%") = [](request& req, auto path) {
@@ -39,6 +39,27 @@ int main() {
         req.response() << "<htm><body><h1>Hello World</h1></body></html>";
     };
 
+    s.map<>("/login") = [](request& req) {
+        req.response().add_cookie("logged-in", "true");
+    };
+
+    s.map<>("/user") = [](request& req) {
+        if (req.cookie("logged-in") == "true") {
+            req.response() << "Logged in";
+        }
+        else {
+            req.response() << "Not logged in" << req.cookie("logged-in").value();
+        }
+    };
+
+    s.map<>("/headers") = [](request& req) {
+        for (auto s : req.headers("Cookie")) {
+            req.response() << s << "<br/>";
+        }
+        for (auto [name, value] : req.headers()) {
+            req.response()  << name << "=[" << value << "]<br/>";
+        }
+    };
 
     basic_serve(s, 5000);
 }

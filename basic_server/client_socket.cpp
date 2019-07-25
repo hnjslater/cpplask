@@ -111,7 +111,7 @@ static auto parse_request(std::string bufferstr) -> auto {
     std::map<std::string, std::string> query_params;
 
     std::string version = strtok_r(NULL, "\n", &strtok_state);
-    std::map<std::string, std::string> headers;
+    std::vector<std::pair<std::string, std::string>> headers;
     do {
         current_line_buf = strtok_r(NULL, "\n", &strtok_state);
         const std::string current_line(current_line_buf);
@@ -119,10 +119,12 @@ static auto parse_request(std::string bufferstr) -> auto {
         if (index_of_colon != std::string::npos) {
             const std::string name = current_line.substr(0, index_of_colon);
             const std::string value = current_line.substr(index_of_colon+2, current_line.length()-index_of_colon-3);
-            headers[name] = value;
+            headers.emplace_back(name, value);
         }
     } while (strlen(current_line_buf) > 1);
     std::cerr << verb << " " << path << "\n";
+
+    std::stable_sort(headers.begin(), headers.end());
 
     return std::make_pair(path, headers); 
 }

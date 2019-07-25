@@ -38,5 +38,8 @@ void response::add_header(const std::string& name, const std::string& value) {
     m_header_buffer.put('\n');
 }
 
+void response::add_cookie(const std::string& name, const std::string& value) {
+    add_header("Set-Cookie", name + "=" + value);
+}
 
 }
