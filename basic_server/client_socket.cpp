@@ -103,14 +103,13 @@ cpplask::client_socket::~client_socket() {
 static auto parse_request(std::string bufferstr) -> auto {
     char* buffer = const_cast<char*>(bufferstr.c_str());
 
-    char* strtok_state;
-    char* current_line_buf = 0;
+    char* strtok_state = nullptr;
+    char* current_line_buf = nullptr;
 
     std::string verb = strtok_r(buffer, " ", &strtok_state);
     std::string path = strtok_r(NULL, " ", &strtok_state);
-    std::map<std::string, std::string> query_params;
-
     std::string version = strtok_r(NULL, "\n", &strtok_state);
+
     std::vector<std::pair<std::string, std::string>> headers;
     do {
         current_line_buf = strtok_r(NULL, "\n", &strtok_state);
@@ -126,7 +125,13 @@ static auto parse_request(std::string bufferstr) -> auto {
 
     std::stable_sort(headers.begin(), headers.end());
 
-    return std::make_pair(path, headers); 
+    std::string query;
+    if (auto query_first = path.find("?"); query_first != std::string::npos) {
+        query = path.substr(query_first + 1);
+        path = path.substr(0, query_first);
+    }
+
+    return std::make_tuple(path, query, headers); 
 }
 
 void cpplask::client_socket::ingest() {
@@ -141,8 +146,8 @@ void cpplask::client_socket::ingest() {
 
     if (std::search(buffer.begin(), buffer.end(), marker.begin(), marker.end()) != buffer.end()) {
 
-        auto parameters = parse_request(buffer);
-        cpplask::request req(std::get<0>(parameters), std::get<1>(parameters));
+        auto [path, query, headers] = parse_request(buffer);
+        cpplask::request req(path, query, headers);
         service->serve(req);
 
         std::string message = req.response().str();

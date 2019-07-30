@@ -53,12 +53,10 @@ int main() {
     };
 
     s.map<>("/headers") = [](request& req) {
-        for (auto s : req.headers("Cookie")) {
-            req.response() << s << "<br/>";
-        }
         for (auto [name, value] : req.headers()) {
-            req.response()  << name << "=[" << value << "]<br/>";
+            req.response()  << name << "=" << value << "<br/>";
         }
+        req.response() << "Query String: " << req.query() << "<br />";
     };
 
     basic_serve(s, 5000);
