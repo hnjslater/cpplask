@@ -2,6 +2,7 @@
 #include <string>
 #include <map>
 #include <sstream>
+#include <fstream>
 
 #include <response.hpp>
 
@@ -40,6 +41,18 @@ void response::add_header(const std::string& name, const std::string& value) {
 
 void response::add_cookie(const std::string& name, const std::string& value) {
     add_header("Set-Cookie", name + "=" + value);
+}
+
+void response::serve_file(const std::string path) {
+    std::ifstream file(path);
+    if (file.fail()) {
+        code() = 404;
+        status() = "Not Found";
+        return;
+    }
+    copy(std::istreambuf_iterator<char>(file),
+         std::istreambuf_iterator<char>(),
+         std::ostreambuf_iterator<char>(m_buffer));
 }
 
 }

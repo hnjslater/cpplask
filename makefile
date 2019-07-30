@@ -1,10 +1,10 @@
 CPPFLAGS+=-std=c++17 -Wall -Werror -Wextra -pedantic -Weffc++ -I. -Wundef -Wold-style-cast
-OBJS:=main.o service.o request.o response.o
+OBJS:=service.o request.o response.o
 OBJS+=basic_server/basic_server.o basic_server/client_socket.o basic_server/listen_socket.o
 
 all:    main
 
-main: ${OBJS}
+main: ${OBJS} main.o
 	${CXX} $^ -o $@ -pthread
 
 %.o: %.cpp
@@ -19,6 +19,9 @@ clean:
 
 deps:
 	makedepend -Y. *.cpp basic_server/*.cpp
+
+examples/microblog/server: ${OBJS} examples/microblog/server.o
+	${CXX} $^ -o $@ -pthread
 
 # DO NOT DELETE
 

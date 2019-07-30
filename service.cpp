@@ -14,25 +14,14 @@
 namespace cpplask {
 
 bool serve_static_file(request& req, path path) {
-
-    // This feels like it could be safer...
-    if (path.str.find("..") != std::string::npos) {
-        req.response().code() = 403;
-        req.response().status() = "Forbidden";
-    
-    }
-    std::fstream file(path.str, std::ios::in);
-
-    char buffer[1024];
-
-    do {
-        file.read(buffer, 1024);
-        req.response().write(buffer, file.gcount());
-
-    } while (!file.eof());
-
-
-    file.close();
+    req.response().serve_file(path.str);
     return true;
 }
+
+std::function<void(request&)> static_file_action(const std::string path) {
+    return [path](request& req) {
+        req.response().serve_file(path);
+    };
+}
+
 }

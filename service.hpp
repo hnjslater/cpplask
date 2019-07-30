@@ -13,7 +13,10 @@
 #include <map>
 
 namespace cpplask {
+
 bool serve_static_file(request& req, path path);
+
+std::function<void(request&)> static_file_action(const std::string path);
 
 class route {
 protected:

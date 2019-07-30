@@ -28,6 +28,7 @@ public:
     template<typename T>
     std::stringstream& operator<<(T value);
 
+    void serve_file(const std::string path);
     void write(char* buffer, int count);
     void add_header(const std::string& name, const std::string& value);
     void add_cookie(const std::string& name, const std::string& value);
