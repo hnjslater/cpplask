@@ -5,10 +5,6 @@
 
 namespace cpplask {
 
-request::request(const std::string& path, const std::string& query, std::vector<std::pair<std::string, std::string>>&& headers) : 
-    m_path(path), m_query(query), m_headers(headers), m_response()
-{ }
-
 request::request(std::string path, std::string query, std::vector<std::pair<std::string, std::string>> headers) :
     m_path(path), m_query(query), m_headers(headers), m_response() 
 { }

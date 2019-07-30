@@ -14,10 +14,8 @@ class request {
 
     impl::response m_response;
 public:
-
     
 // Constuctors
-    request(const std::string& path, const std::string& query, std::vector<std::pair<std::string, std::string>>&& headers);
     request(std::string path, std::string query, std::vector<std::pair<std::string, std::string>> headers);
 
 // Accessors
