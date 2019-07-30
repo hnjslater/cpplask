@@ -106,16 +106,15 @@ static auto parse_request(std::string bufferstr) -> auto {
     char* strtok_state = nullptr;
     char* current_line_buf = nullptr;
 
-    std::string verb = strtok_r(buffer, " ", &strtok_state);
+    const std::string verb = strtok_r(buffer, " ", &strtok_state);
     std::string path = strtok_r(NULL, " ", &strtok_state);
-    std::string version = strtok_r(NULL, "\n", &strtok_state);
+    const std::string version = strtok_r(NULL, "\n", &strtok_state);
 
     std::vector<std::pair<std::string, std::string>> headers;
     do {
         current_line_buf = strtok_r(NULL, "\n", &strtok_state);
         const std::string current_line(current_line_buf);
-        size_t index_of_colon = current_line.find(":"); 
-        if (index_of_colon != std::string::npos) {
+        if (const auto index_of_colon = current_line.find(":"); index_of_colon != std::string::npos) {
             const std::string name = current_line.substr(0, index_of_colon);
             const std::string value = current_line.substr(index_of_colon+2, current_line.length()-index_of_colon-3);
             headers.emplace_back(name, value);
@@ -136,13 +135,13 @@ static auto parse_request(std::string bufferstr) -> auto {
 
 void cpplask::client_socket::ingest() {
     char cbuffer[2048] = {0};
-    int num_read = read(socket_fd,cbuffer,2040);
+    const int num_read = read(socket_fd,cbuffer,2040);
     if (num_read < 0) {
         throw std::runtime_error(std::string("ERROR reading from socket:") + std::to_string(socket_fd) + strerror(errno));
     }
 
     buffer += std::string(cbuffer, num_read);
-    std::string marker = "\r\n\r\n";
+    const std::string marker = "\r\n\r\n";
 
     if (std::search(buffer.begin(), buffer.end(), marker.begin(), marker.end()) != buffer.end()) {
 
@@ -150,7 +149,7 @@ void cpplask::client_socket::ingest() {
         cpplask::request req(path, query, headers);
         service->serve(req);
 
-        std::string message = req.response().str();
+        const std::string message = req.response().str();
 
         std::stringstream ss;
         ss << "HTTP/1.1 " << req.response().code() << " " << req.response().status() << "\n";
