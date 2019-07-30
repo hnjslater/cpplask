@@ -10,8 +10,8 @@ main: ${OBJS} main.o
 %.o: %.cpp
 	${CXX} -c ${CPPFLAGS} $< -o $@
 
-tests: url_scanner_test.cpp url_scanner.hpp
-	${CXX} ${CPPFLAGS} -o $@ url_scanner_test.cpp -pthread -lgtest -lgtest_main
+tests: url_scanner_test.cpp request_test.cpp request.o response.o
+	${CXX} ${CPPFLAGS} -o $@ $^ -pthread -lgtest -lgtest_main
 	./tests
 
 clean:
@@ -28,6 +28,7 @@ examples/microblog/server: ${OBJS} examples/microblog/server.o
 main.o: ./service.hpp ./url_scanner.hpp ./response.hpp ./request.hpp
 main.o: ./basic_server/basic_server.hpp
 request.o: ./request.hpp ./response.hpp
+request_test.o: ./request.hpp ./response.hpp
 response.o: ./response.hpp
 service.o: ./url_scanner.hpp ./response.hpp ./request.hpp
 url_scanner_test.o: ./url_scanner.hpp
