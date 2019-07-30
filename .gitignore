@@ -18,3 +18,4 @@ makefile.bak
 
 main
 tests
+examples/microblog/server
