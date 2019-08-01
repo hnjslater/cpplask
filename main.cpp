@@ -48,7 +48,7 @@ int main() {
             req.response() << "Logged in";
         }
         else {
-            req.response() << "Not logged in" << req.cookie("logged-in").value();
+            req.response() << "Not logged in" << req.cookie("logged-in").value_or("");
         }
     };
 

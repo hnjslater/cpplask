@@ -20,7 +20,7 @@
 // returns true if there is no more data to send.
 bool cpplask::client_socket::send_data() {
     int& write_socket_fd = socket_fd;
-    std::string& buffstr = buffer;
+    std::string buffstr = buffer.str();
     int total_written = 0;
     ssize_t num_written = 0;
 
@@ -33,7 +33,7 @@ bool cpplask::client_socket::send_data() {
         if (num_written < 0) {
             if (errno == EWOULDBLOCK || errno == EAGAIN) {
                 total_written += num_written;
-                buffstr = std::string(buffstr.begin() + num_written, buffstr.end());
+                buffer.str() = std::string(buffstr.begin() + num_written, buffstr.end());
                 return false;
             }
             else {
@@ -100,26 +100,27 @@ cpplask::client_socket::~client_socket() {
     }
 }
 
-static auto parse_request(std::string bufferstr) -> auto {
-    char* buffer = const_cast<char*>(bufferstr.c_str());
+static auto parse_request(std::stringstream& buffer) -> auto {
 
-    char* strtok_state = nullptr;
-    char* current_line_buf = nullptr;
+    std::string verb;
+    std::string path;
+    std::string version;
 
-    const std::string verb = strtok_r(buffer, " ", &strtok_state);
-    std::string path = strtok_r(NULL, " ", &strtok_state);
-    const std::string version = strtok_r(NULL, "\n", &strtok_state);
+    std::getline(buffer, verb, ' ');
+    std::getline(buffer, path, ' ');
+    std::getline(buffer, version);
 
+    std::string current_line;
     std::vector<std::pair<std::string, std::string>> headers;
     do {
-        current_line_buf = strtok_r(NULL, "\n", &strtok_state);
-        const std::string current_line(current_line_buf);
+        std::getline(buffer, current_line);
+
         if (const auto index_of_colon = current_line.find(":"); index_of_colon != std::string::npos) {
             const std::string name = current_line.substr(0, index_of_colon);
             const std::string value = current_line.substr(index_of_colon+2, current_line.length()-index_of_colon-3);
             headers.emplace_back(name, value);
         }
-    } while (strlen(current_line_buf) > 1);
+    } while (!buffer.eof());
     std::cerr << verb << " " << path << "\n";
 
     std::stable_sort(headers.begin(), headers.end());
@@ -140,10 +141,10 @@ void cpplask::client_socket::ingest() {
         throw std::runtime_error(std::string("ERROR reading from socket:") + std::to_string(socket_fd) + strerror(errno));
     }
 
-    buffer += std::string(cbuffer, num_read);
+    buffer.write(cbuffer, num_read);
     const std::string marker = "\r\n\r\n";
 
-    if (std::search(buffer.begin(), buffer.end(), marker.begin(), marker.end()) != buffer.end()) {
+    if (std::search(buffer.str().begin(), buffer.str().end(), marker.begin(), marker.end()) != buffer.str().end()) {
 
         auto [path, query, headers] = parse_request(buffer);
         cpplask::request req(path, query, headers);
@@ -159,7 +160,7 @@ void cpplask::client_socket::ingest() {
         ss << "\n";
         ss << message;
 
-        buffer = ss.str();
+        buffer = std::move(ss);
         request_complete = true;
     }
 }

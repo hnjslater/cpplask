@@ -7,7 +7,7 @@ namespace cpplask {
 struct client_socket {
     int socket_fd;
     bool request_complete;
-    std::string buffer;
+    std::stringstream buffer;
     cpplask::service* service;
     client_socket(int listen_socket_fd, cpplask::service& serv);
 
