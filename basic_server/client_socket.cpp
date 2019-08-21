@@ -16,6 +16,7 @@
 #include <algorithm>
 
 #include <basic_server/client_socket.hpp>
+#include <basic_request.hpp>
 
 // returns true if there is no more data to send.
 bool cpplask::client_socket::send_data() {
@@ -147,7 +148,7 @@ void cpplask::client_socket::ingest() {
     if (std::search(buffer.str().begin(), buffer.str().end(), marker.begin(), marker.end()) != buffer.str().end()) {
 
         auto [path, query, headers] = parse_request(buffer);
-        cpplask::request req(path, query, headers);
+        cpplask::basic_request req(path, query, headers);
         service->serve(req);
 
         const std::string message = req.response().str();

@@ -1,27 +1,27 @@
-#include <request.hpp>
+#include <basic_request.hpp>
 
 #include <algorithm>
 #include <iterator>
 
 namespace cpplask {
 
-request::request(std::string path, std::string query, std::vector<std::pair<std::string, std::string>> headers) :
+basic_request::basic_request(std::string path, std::string query, std::vector<std::pair<std::string, std::string>> headers) :
     m_path(path), m_query(query), m_headers(headers), m_response() 
 { }
 
-const std::string& request::path() const {
+const std::string& basic_request::path() const {
     return m_path;
 }
 
-const std::string& request::query() const {
+const std::string& basic_request::query() const {
     return m_query;
 }
 
-impl::response& request::response() {
+impl::response& basic_request::response() {
     return m_response;
 }
 
-const std::vector<std::string> request::headers(const std::string& name) const {
+const std::vector<std::string> basic_request::headers(const std::string& name) const {
     auto comp = [](auto x, auto y) {
             return x.first < y.first;
         };
@@ -60,7 +60,7 @@ const std::vector<std::string> request::headers(const std::string& name) const {
     return result;
 }
 
-const std::optional<std::string> request::cookie(const std::string& name) const {
+const std::optional<std::string> basic_request::cookie(const std::string& name) const {
 
     const auto value_prefix = name + "=";
 
@@ -78,7 +78,7 @@ const std::optional<std::string> request::cookie(const std::string& name) const 
 }
 
 
-const std::vector<std::pair<std::string,std::string>> request::headers() const {
+const std::vector<std::pair<std::string,std::string>> basic_request::headers() const {
     return m_headers;
 }
 

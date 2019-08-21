@@ -8,25 +8,18 @@
 namespace cpplask {
 
 class request {
-    std::string m_path;
-    std::string m_query;
-    std::vector<std::pair<std::string, std::string>> m_headers;
-
-    impl::response m_response;
 public:
-    
-// Constuctors
-    request(std::string path, std::string query, std::vector<std::pair<std::string, std::string>> headers);
+    virtual ~request() {};
 
 // Accessors
-    const std::string& path() const;
-    const std::string& query() const;
-    const std::vector<std::string> headers(const std::string& name) const;
-    const std::vector<std::pair<std::string,std::string>> headers() const;
-    const std::optional<std::string> cookie(const std::string& name) const;
+    virtual const std::string& path() const = 0;
+    virtual const std::string& query() const = 0;
+    virtual const std::vector<std::string> headers(const std::string& name) const = 0;
+    virtual const std::vector<std::pair<std::string,std::string>> headers() const = 0;
+    virtual const std::optional<std::string> cookie(const std::string& name) const = 0;
 
 // Fields
-    impl::response& response();
+    virtual impl::response& response() = 0;
 };
 
 }

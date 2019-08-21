@@ -10,39 +10,35 @@
 namespace cpplask::impl {
 
 class response {
-    unsigned int m_code;
-    std::string m_status;
-    std::string m_mime_type;
-    std::stringstream m_buffer;
-    std::stringstream m_header_buffer;
-
 public:
-// Constructors
-    response();
+    virtual ~response() {};
 
 // Accessors
-    std::string headers_str();
-    std::string str();
+    virtual std::string headers_str() = 0;
+    virtual std::string str() = 0;
 
 // Mutators
-    template<typename T>
-    std::stringstream& operator<<(T value);
-
-    void serve_file(const std::string path);
-    void write(char* buffer, int count);
-    void add_header(const std::string& name, const std::string& value);
-    void add_cookie(const std::string& name, const std::string& value);
+    virtual void serve_file(const std::string path) = 0;
+    virtual void write(const char* buffer, int count) = 0;
+    virtual void add_header(const std::string& name, const std::string& value) = 0;
+    virtual void add_cookie(const std::string& name, const std::string& value) = 0;
 
 // Fields
-    unsigned int& code();
-    std::string& status();
-    std::string& mime_type();
+    virtual unsigned int& code() = 0;
+    virtual std::string& status() = 0;
+    virtual std::string& mime_type() = 0;
 };
 
 template<typename T>
-std::stringstream& response::operator<<(T value) {
-    m_buffer << value;
-    return m_buffer;
+response& operator<<(response& r, T value) {
+    auto s = std::to_string(value);
+    r.write(s.c_str(), s.length());
+    return r;
 }
 
+template<>
+response& operator<<(response& r, std::string s);
+
+template<>
+response& operator<<(response& r, const char* s);
 }
